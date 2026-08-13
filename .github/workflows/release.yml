@@ -24,9 +24,15 @@ jobs:
             base-devel \
             cargo \
             git \
+            gtk3 \
+            gtk-layer-shell \
+            libnotify \
             pacman-contrib \
+            pkgconf \
             rust \
-            sudo
+            sudo \
+            udisks2 \
+            xdg-utils
 
       - name: Prepare build user
         run: |

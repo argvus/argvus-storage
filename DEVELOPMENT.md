@@ -31,12 +31,12 @@ cargo run --locked -- menu
 
 ## Configuration files
 
-Source defaults live in this repository:
+Source defaults live in this repository under `resources/`:
 
 ```text
-config.json
-theme.css
-themes/
+resources/config.json
+resources/theme.css
+resources/themes/
 ```
 
 The Arch package installs them to:

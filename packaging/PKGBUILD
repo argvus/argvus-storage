@@ -52,13 +52,13 @@ package() {
   install -Dm755 "target/release/${pkgname}" \
     "${pkgdir}/usr/bin/${pkgname}"
 
-  install -Dm644 config.json \
+  install -Dm644 resources/config.json \
     "${pkgdir}/etc/${pkgname}/config.json"
-  install -Dm644 theme.css \
+  install -Dm644 resources/theme.css \
     "${pkgdir}/etc/${pkgname}/theme.css"
 
   install -dm755 "${pkgdir}/etc/${pkgname}/themes"
-  install -m644 themes/*.css "${pkgdir}/etc/${pkgname}/themes/"
+  install -m644 resources/themes/*.css "${pkgdir}/etc/${pkgname}/themes/"
 
   install -Dm644 LICENSE \
     "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"

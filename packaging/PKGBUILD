@@ -1,0 +1,65 @@
+# Maintainer: William C. Canin
+pkgname=argvus-storage
+pkgver=0.0.0
+pkgrel=1
+pkgdesc="Removable storage module for Waybar, written in Rust for the Argvus desktop"
+arch=('x86_64')
+url="https://github.com/argvus/argvus-storage"
+license=('GPL-3.0-only')
+options=('!debug')
+depends=(
+  'gtk3'
+  'gtk-layer-shell'
+  'libnotify'
+  'udisks2'
+  'xdg-utils'
+)
+makedepends=(
+  'cargo'
+  'pkgconf'
+)
+backup=(
+  'etc/argvus-storage/config.json'
+  'etc/argvus-storage/theme.css'
+  'etc/argvus-storage/themes/argvus-dark-silver.css'
+  'etc/argvus-storage/themes/argvus-dark.css'
+  'etc/argvus-storage/themes/argvus-light.css'
+  'etc/argvus-storage/themes/argvus-slate.css'
+)
+source=(
+  "${pkgname}-${pkgver}.tar.gz::${url}/archive/refs/tags/v${pkgver}.tar.gz"
+)
+sha256sums=('SKIP')
+
+prepare() {
+  cd "${pkgname}-${pkgver}"
+  cargo fetch --locked --target "${CARCH}-unknown-linux-gnu"
+}
+
+build() {
+  cd "${pkgname}-${pkgver}"
+  cargo build --release --locked --target-dir target
+}
+
+check() {
+  cd "${pkgname}-${pkgver}"
+  cargo test --locked --target-dir target
+}
+
+package() {
+  cd "${pkgname}-${pkgver}"
+
+  install -Dm755 "target/release/${pkgname}" \
+    "${pkgdir}/usr/bin/${pkgname}"
+
+  install -Dm644 config.json \
+    "${pkgdir}/etc/${pkgname}/config.json"
+  install -Dm644 theme.css \
+    "${pkgdir}/etc/${pkgname}/theme.css"
+
+  install -dm755 "${pkgdir}/etc/${pkgname}/themes"
+  install -m644 themes/*.css "${pkgdir}/etc/${pkgname}/themes/"
+
+  install -Dm644 LICENSE \
+    "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+}

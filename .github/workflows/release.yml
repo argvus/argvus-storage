@@ -1,0 +1,119 @@
+name: Arch package
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    name: Build and publish Arch package
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Install packaging tools
+        run: |
+          pacman -Syu --noconfirm --needed \
+            base-devel \
+            cargo \
+            git \
+            pacman-contrib \
+            rust \
+            sudo
+
+      - name: Prepare build user
+        run: |
+          useradd --create-home --shell /bin/bash builder
+          printf 'builder ALL=(ALL) NOPASSWD: ALL\n' >/etc/sudoers.d/builder
+          chown -R builder:builder "$GITHUB_WORKSPACE"
+
+      - name: Prepare PKGBUILD version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          version="${GITHUB_REF_NAME#v}"
+          if [[ ! "$version" =~ ^[0-9]+(\.[0-9]+)*([._+-][A-Za-z0-9]+)*$ ]]; then
+            echo "Unsupported version tag: ${GITHUB_REF_NAME}" >&2
+            exit 1
+          fi
+
+          cargo_version="$(awk -F '"' '/^version = / { print $2; exit }' Cargo.toml)"
+          if [[ "$cargo_version" != "$version" ]]; then
+            echo "Cargo.toml version (${cargo_version}) does not match tag (${version})." >&2
+            exit 1
+          fi
+
+          sed -i "s/^pkgver=.*/pkgver=${version}/" packaging/PKGBUILD
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+
+      - name: Run clippy
+        run: |
+          sudo -u builder env GITHUB_WORKSPACE="$GITHUB_WORKSPACE" bash -lc \
+            'cd "$GITHUB_WORKSPACE" && cargo clippy --locked --all-targets --all-features -- -D warnings'
+
+      - name: Build package
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          sudo -u builder env GITHUB_WORKSPACE="$GITHUB_WORKSPACE" bash -lc \
+            'cd "$GITHUB_WORKSPACE/packaging" && makepkg --syncdeps --noconfirm --needed --cleanbuild --clean'
+
+          pkg_file="$(find packaging -maxdepth 1 -type f -name 'argvus-storage-*.pkg.tar.zst' -print -quit)"
+          if [[ -z "$pkg_file" ]]; then
+            echo "Package file was not created." >&2
+            exit 1
+          fi
+
+          echo "pkg_file=${pkg_file}" >> "$GITHUB_ENV"
+          echo "pkg_name=$(basename "$pkg_file")" >> "$GITHUB_ENV"
+
+      - name: Upload temporary package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.pkg_name }}
+          path: ${{ env.pkg_file }}
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Checkout packages repository
+        uses: actions/checkout@v4
+        with:
+          repository: argvus/packages
+          path: packages-repo
+          token: ${{ secrets.PACKAGES_REPO_TOKEN }}
+
+      - name: Publish package to argvus/packages
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          repo_dir="$GITHUB_WORKSPACE/packages-repo/public/arch/x86_64"
+          mkdir -p "$repo_dir"
+          cp "$GITHUB_WORKSPACE/${pkg_file}" "$repo_dir/${pkg_name}"
+
+          cd "$repo_dir"
+          repo-add -R argvus.db.tar.gz "$pkg_name"
+
+          cd "$GITHUB_WORKSPACE/packages-repo"
+          git config --global --add safe.directory "$PWD"
+
+          if git diff --quiet -- public/arch/x86_64; then
+            echo "No package repository changes to publish."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/arch/x86_64
+          git commit -m "Publish argvus-storage ${{ steps.version.outputs.version }}"
+          git push

@@ -1,0 +1,45 @@
+{
+  // Argvus — removable storage module (argvus-storage) system defaults.
+  //
+  // This file is installed at /etc/argvus-storage/config.json.
+  // To customize, copy it to ~/.config/argvus-storage/config.json and
+  // edit; user settings override these defaults. All keys are optional.
+  //
+  // GTK popup menu styling (mode = "gui") lives in the sibling theme.css
+  // file, not here. Copy it to ~/.config/argvus-storage/theme.css to
+  // customize the look; user rules override the system ones.
+  //
+  // Comments are allowed and ignored.
+
+  "show_name": false,       // kept for compatibility; Waybar shows one compact icon
+  "show_capacity": false,   // append used/total to the label
+  "hide_when_empty": true,  // hide the waybar module when no devices are present
+  "show_hidden": false,     // show EFI/reserved partitions
+  "max_devices": 0,         // 0 = unlimited; extra devices are shown as "+N"
+
+  "sort": "mount_time",     // mount_time | insertion | name | size
+  "separator": "  ",
+  "format": "{icon}",
+
+  "open_command": "xdg-open",          // compatibility alias for file_manager_command
+  "file_manager_command": "xdg-open",  // examples: "nautilus", "kitty -e yazi", "kitty -e spf"
+  "copy_command": "wl-copy",
+  "unlock_command": "kitty -e",   // prefix used to open a terminal for the LUKS passphrase
+  "mode": "gui",                  // gui = GTK context menu on right click | rofi = dmenu-style list
+  "menu": "rofi",                 // rofi | wofi | dmenu (only used when mode = rofi)
+  "menu_flags": "-dmenu -i -p Storage",
+
+  // Tokens for "format" and "tooltip_format":
+  //   {icon} {name} {block} {fs} {capacity} {used} {free} {mount} {vendor}
+  //   {model} {state}   (state = "Encrypted · Locked" / "Read-only", ...)
+  "tooltip_format": "{name}\n{state}\n{fs} · {capacity}\n{used} used · {free} free\n{mount}",
+
+  // Font Awesome 7 Free glyphs (icon_size is accepted for compatibility but
+  // unused in text mode — the waybar label is a normal text label).
+  "icons": {
+    "mounted": "\uf0a0",    // hard-drive
+    "unmounted": "\uf0a0",  // hard-drive
+    "encrypted": "\uf023",  // lock
+    "read_only": "\uf023"   // lock
+  }
+}

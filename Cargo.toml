@@ -1,0 +1,23 @@
+[package]
+name = "argvus-storage"
+version = "0.1.0"
+edition = "2024"
+description = "Removable storage module for waybar (UDisks2)"
+
+[[bin]]
+name = "argvus-storage"
+path = "src/main.rs"
+
+[dependencies]
+zbus = { version = "5", features = ["tokio"] }
+zvariant = "5"
+arboard = { version = "3", default-features = false, features = ["wayland-data-control"] }
+serde_json = "1"
+futures-lite = "2"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "time", "signal"] }
+libc = "0.2"
+gtk = "0.18"
+gtk-layer-shell = { version = "0.8", features = ["v0_6"] }
+
+[profile.release]
+strip = true

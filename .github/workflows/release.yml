@@ -113,13 +113,14 @@ jobs:
           cd "$GITHUB_WORKSPACE/packages-repo"
           git config --global --add safe.directory "$PWD"
 
-          if git diff --quiet -- public/arch/x86_64; then
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/arch/x86_64
+
+          if git diff --cached --quiet -- public/arch/x86_64; then
             echo "No package repository changes to publish."
             exit 0
           fi
 
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add public/arch/x86_64
           git commit -m "Publish argvus-storage ${{ steps.version.outputs.version }}"
           git push

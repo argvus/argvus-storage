@@ -1,6 +1,6 @@
 # Maintainer: William C. Canin
 pkgname=argvus-storage
-pkgver=0.1.1
+pkgver=0.1.2
 pkgrel=1
 pkgdesc="Removable storage module for Waybar, written in Rust for the Argvus desktop"
 arch=('x86_64')
@@ -22,10 +22,10 @@ backup=(
   'etc/argvus-storage/config.json'
   'etc/argvus-storage/theme.css'
   'etc/argvus-storage/themes/argvus-dark-silver.css'
-  'etc/argvus-storage/themes/argvus-dark.css'
-  'etc/argvus-storage/themes/argvus-light.css'
-  'etc/argvus-storage/themes/argvus-slate.css'
-  'etc/argvus-storage/themes/argvus-universe.css'
+  'etc/argvus-storage/themes/argvus-dark-aether.css'
+  'etc/argvus-storage/themes/argvus-light-veil.css'
+  'etc/argvus-storage/themes/argvus-dark-slate.css'
+  'etc/argvus-storage/themes/argvus-dark-universe.css'
 )
 source=(
   "${pkgname}-${pkgver}.tar.gz::${url}/archive/refs/tags/v${pkgver}.tar.gz"

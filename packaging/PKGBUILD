@@ -25,6 +25,7 @@ backup=(
   'etc/argvus-storage/themes/argvus-dark.css'
   'etc/argvus-storage/themes/argvus-light.css'
   'etc/argvus-storage/themes/argvus-slate.css'
+  'etc/argvus-storage/themes/argvus-universe.css'
 )
 source=(
   "${pkgname}-${pkgver}.tar.gz::${url}/archive/refs/tags/v${pkgver}.tar.gz"

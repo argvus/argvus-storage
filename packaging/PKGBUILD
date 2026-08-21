@@ -1,6 +1,6 @@
 # Maintainer: William C. Canin
 pkgname=argvus-storage
-pkgver=0.0.0
+pkgver=0.1.1
 pkgrel=1
 pkgdesc="Removable storage module for Waybar, written in Rust for the Argvus desktop"
 arch=('x86_64')

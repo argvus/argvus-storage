@@ -1,5 +1,6 @@
 use crate::config::Config;
 use crate::device::Device;
+use crate::i18n;
 use crate::util;
 
 pub struct RenderResult {
@@ -112,7 +113,9 @@ impl<'a> Renderer<'a> {
         } else {
             result.text = self.config.icons_unmounted.clone();
 
-            result.tooltip.push_str("Removable devices");
+            result
+                .tooltip
+                .push_str(i18n::tr("Removable devices", "Dispositivos removíveis"));
             for d in &visible {
                 result.tooltip.push('\n');
                 result.tooltip.push_str("• ");
@@ -124,7 +127,7 @@ impl<'a> Renderer<'a> {
                 result.tooltip.push('\n');
                 result.tooltip.push('+');
                 result.tooltip.push_str(&overflow.to_string());
-                result.tooltip.push_str(" more");
+                result.tooltip.push_str(i18n::tr(" more", " mais"));
             }
             let any_mounted = visible.iter().any(|d| d.mounted);
             result.alt = if any_mounted {
@@ -189,15 +192,15 @@ fn expand_tokens(out: &mut String, d: &Device) {
 
     let mut state = String::new();
     if d.encrypted && d.locked {
-        state.push_str("Encrypted · Locked");
+        state.push_str(i18n::tr("Encrypted · Locked", "Criptografado · Bloqueado"));
     } else if d.encrypted {
-        state.push_str("Encrypted");
+        state.push_str(i18n::tr("Encrypted", "Criptografado"));
     }
     if d.read_only {
         if !state.is_empty() {
             state.push_str(" · ");
         }
-        state.push_str("Read-only");
+        state.push_str(i18n::tr("Read-only", "Somente leitura"));
     }
 
     let tokens: [(&str, &str); 10] = [

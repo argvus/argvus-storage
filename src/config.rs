@@ -36,8 +36,8 @@ impl Default for Config {
             sort: "mount_time".to_string(),
             separator: "  ".to_string(),
             format: "{icon}".to_string(),
-            tooltip_format: "{name}\n{state}\n{fs} · {capacity}\n{used} used · {free} free\n{mount}"
-                .to_string(),
+            tooltip_format:
+                "{name}\n{state}\n{fs} · {capacity}\n{used} used · {free} free\n{mount}".to_string(),
             open_command: "xdg-open".to_string(),
             file_manager_command: "xdg-open".to_string(),
             copy_command: "wl-copy".to_string(),
@@ -103,7 +103,12 @@ fn load_json(path: &str) -> Option<serde_json::Value> {
     match serde_json::from_str(&strip_comments(&content)) {
         Ok(v) => Some(v),
         Err(e) => {
-            eprintln!("argvus-storage: ignoring invalid config {}: {}", path, e);
+            eprintln!(
+                "argvus-storage: {} {}: {}",
+                crate::i18n::tr("ignoring invalid config", "ignorando configuração inválida"),
+                path,
+                e
+            );
             None
         }
     }
@@ -174,12 +179,7 @@ fn apply_json(cfg: &mut Config, j: &serde_json::Value) {
         cfg.menu_flags = v;
     }
     if let Some(icons) = obj.get("icons").and_then(|v| v.as_object()) {
-        let icon_get = |key: &str| {
-            icons
-                .get(key)
-                .and_then(|v| v.as_str())
-                .map(String::from)
-        };
+        let icon_get = |key: &str| icons.get(key).and_then(|v| v.as_str()).map(String::from);
         if let Some(v) = icon_get("mounted") {
             cfg.icons_mounted = v;
         }

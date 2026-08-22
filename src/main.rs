@@ -2,6 +2,7 @@ mod actions;
 mod config;
 mod device;
 mod gui;
+mod i18n;
 mod menu;
 mod monitor;
 mod renderer;
@@ -13,7 +14,7 @@ use std::io::Write;
 
 use actions::{ActionKind, Actions};
 use config::Config;
-use device::{build_devices, Device};
+use device::{Device, build_devices};
 use menu::Menu;
 use monitor::Monitor;
 use renderer::Renderer;
@@ -22,38 +23,66 @@ use udisks::UdisksClient;
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 fn print_usage(out: &mut dyn Write) {
-    let _ = writeln!(
-        out,
-        "argvus-storage {} - removable storage module for waybar (UDisks2)\n\
-         \n\
-         Usage: argvus-storage [options] <command> [device]\n\
-         \n\
-         Commands:\n\
-         \x20 watch        emit a JSON line for waybar whenever devices change (default)\n\
-         \x20 once         emit a single JSON line and exit\n\
-         \x20 list         print removable storage devices\n\
-         \x20 devices      choose a device and open it in the file manager\n\
-         \x20 menu         interactive context menu (gui or rofi mode)\n\
-         \x20 open         open the device (mounts it first if needed)\n\
-         \x20 mount        mount the device\n\
-         \x20 unmount      unmount the device\n\
-         \x20 eject        eject the media\n\
-         \x20 poweroff     power off the drive\n\
-         \x20 lock         lock an unlocked LUKS volume\n\
-         \x20 unlock       unlock a locked LUKS volume (passphrase in terminal)\n\
-         \x20 copy         copy the mount path to the clipboard\n\
-         \n\
-         [device] selects a device by block node (/dev/sdb1), label, name or\n\
-         object path; defaults to the first device when omitted.\n\
-         \n\
-         Options:\n\
-         \x20 --config <path>  use an explicit config file\n\
-         \x20 --x <px>        pin the menu X to a position (gui mode)\n\
-         \x20 --y <px>        pin the menu Y to a position (gui mode)\n\
-         \x20 -h, --help       show this help\n\
-         \x20 -v, --version    print the version",
-        VERSION
-    );
+    let usage = i18n::tr(
+            "argvus-storage {VERSION} - removable storage module for waybar (UDisks2)\n\
+             \n\
+             Usage: argvus-storage [options] <command> [device]\n\
+             \n\
+             Commands:\n\
+             \x20 watch        emit a JSON line for waybar whenever devices change (default)\n\
+             \x20 once         emit a single JSON line and exit\n\
+             \x20 list         print removable storage devices\n\
+             \x20 devices      choose a device and open it in the file manager\n\
+             \x20 menu         interactive context menu (gui or rofi mode)\n\
+             \x20 open         open the device (mounts it first if needed)\n\
+             \x20 mount        mount the device\n\
+             \x20 unmount      unmount the device\n\
+             \x20 eject        eject the media\n\
+             \x20 poweroff     power off the drive\n\
+             \x20 lock         lock an unlocked LUKS volume\n\
+             \x20 unlock       unlock a locked LUKS volume (passphrase in terminal)\n\
+             \x20 copy         copy the mount path to the clipboard\n\
+             \n\
+             [device] selects a device by block node (/dev/sdb1), label, name or\n\
+             object path; defaults to the first device when omitted.\n\
+             \n\
+             Options:\n\
+             \x20 --config <path>  use an explicit config file\n\
+             \x20 --x <px>        pin the menu X to a position (gui mode)\n\
+             \x20 --y <px>        pin the menu Y to a position (gui mode)\n\
+             \x20 -h, --help       show this help\n\
+             \x20 -v, --version    print the version",
+            "argvus-storage {VERSION} - módulo de armazenamento removível para waybar (UDisks2)\n\
+             \n\
+             Uso: argvus-storage [opções] <comando> [dispositivo]\n\
+             \n\
+             Comandos:\n\
+             \x20 watch        emite uma linha JSON para a waybar quando os dispositivos mudam (padrão)\n\
+             \x20 once         emite uma única linha JSON e sai\n\
+             \x20 list         lista os dispositivos de armazenamento removíveis\n\
+             \x20 devices      escolhe um dispositivo e abre no gerenciador de arquivos\n\
+             \x20 menu         menu de contexto interativo (modo gui ou rofi)\n\
+             \x20 open         abre o dispositivo (montando antes, se necessário)\n\
+             \x20 mount        monta o dispositivo\n\
+             \x20 unmount      desmonta o dispositivo\n\
+             \x20 eject        ejeta a mídia\n\
+             \x20 poweroff     desliga a unidade\n\
+             \x20 lock         bloqueia um volume LUKS desbloqueado\n\
+             \x20 unlock       desbloqueia um volume LUKS bloqueado (senha no terminal)\n\
+             \x20 copy         copia o ponto de montagem para a área de transferência\n\
+             \n\
+             [dispositivo] seleciona um dispositivo por nó de bloco (/dev/sdb1), rótulo,\n\
+             nome ou caminho de objeto; usa o primeiro dispositivo quando omitido.\n\
+             \n\
+             Opções:\n\
+             \x20 --config <caminho>  usa um arquivo de configuração explícito\n\
+             \x20 --x <px>        fixa o X do menu em uma posição (modo gui)\n\
+             \x20 --y <px>        fixa o Y do menu em uma posição (modo gui)\n\
+             \x20 -h, --help       mostra esta ajuda\n\
+             \x20 -v, --version    imprime a versão"
+        )
+    .replace("{VERSION}", VERSION);
+    let _ = writeln!(out, "{}\n", usage);
 }
 
 pub(crate) async fn snapshot(cfg: &Config) -> Vec<Device> {
@@ -91,9 +120,7 @@ async fn run_watch(cfg: &Config, once: bool) -> i32 {
     let emit = |devs: &[Device]| {
         let result = renderer.render(devs);
         let mut stdout = std::io::stdout().lock();
-        if stdout.write_all(result.json.as_bytes()).is_err()
-            || stdout.write_all(b"\n").is_err()
-        {
+        if stdout.write_all(result.json.as_bytes()).is_err() || stdout.write_all(b"\n").is_err() {
             // waybar restarted the stream; leave quietly.
             std::process::exit(0);
         }
@@ -129,7 +156,13 @@ async fn run_action(cfg: &Config, cmd: &str, token: &str) -> i32 {
     };
     let devs = snapshot(cfg).await;
     let Some(d) = pick(&devs, token) else {
-        eprintln!("argvus-storage: no removable storage devices");
+        eprintln!(
+            "argvus-storage: {}",
+            i18n::tr(
+                "no removable storage devices",
+                "nenhum dispositivo de armazenamento removível"
+            )
+        );
         return 1;
     };
     let actions = Actions::new(cfg);
@@ -152,6 +185,8 @@ fn run_list(devs: &[Device]) -> i32 {
 
 #[tokio::main]
 async fn main() {
+    i18n::init();
+
     // Never die on a closed stdout (waybar restarting the stream).
     unsafe {
         libc::signal(libc::SIGPIPE, libc::SIG_IGN);
@@ -168,21 +203,30 @@ async fn main() {
         if arg == "--config" {
             i += 1;
             if i >= args.len() {
-                eprintln!("argvus-storage: --config requires a path");
+                eprintln!(
+                    "argvus-storage: {}",
+                    i18n::tr("--config requires a path", "--config exige um caminho")
+                );
                 std::process::exit(2);
             }
             config_path = args[i].clone();
         } else if arg == "--x" {
             i += 1;
             if i >= args.len() {
-                eprintln!("argvus-storage: --x requires a value");
+                eprintln!(
+                    "argvus-storage: {}",
+                    i18n::tr("--x requires a value", "--x exige um valor")
+                );
                 std::process::exit(2);
             }
             fixed_x = args[i].parse().ok();
         } else if arg == "--y" {
             i += 1;
             if i >= args.len() {
-                eprintln!("argvus-storage: --y requires a value");
+                eprintln!(
+                    "argvus-storage: {}",
+                    i18n::tr("--y requires a value", "--y exige um valor")
+                );
                 std::process::exit(2);
             }
             fixed_y = args[i].parse().ok();
@@ -232,7 +276,13 @@ async fn main() {
         _ => run_action(&cfg, &cmd, &token).await,
     };
     if code == -1 {
-        eprintln!("argvus-storage: unknown command '{}'", cmd);
+        eprintln!(
+            "argvus-storage: {}",
+            i18n::tr(
+                &format!("unknown command '{}'", cmd),
+                &format!("comando desconhecido '{}'", cmd)
+            )
+        );
         print_usage(&mut std::io::stderr());
         std::process::exit(2);
     }

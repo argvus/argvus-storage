@@ -164,11 +164,12 @@ impl UdisksClient {
                     });
                     parse_block(&props, b, BlockSource::Encrypted);
                 } else if iface == IFACE_PARTITION_TABLE {
-                    block.get_or_insert_with(|| RawBlock {
-                        object_path: path.clone(),
-                        ..RawBlock::default()
-                    })
-                    .is_partition_table = true;
+                    block
+                        .get_or_insert_with(|| RawBlock {
+                            object_path: path.clone(),
+                            ..RawBlock::default()
+                        })
+                        .is_partition_table = true;
                 } else if iface == IFACE_PARTITION {
                     if let Some(t) = prop_string(&props, "Type") {
                         block
@@ -248,23 +249,46 @@ impl UdisksClient {
 
     pub async fn eject(&self, device: &Device) -> Result<(), String> {
         if device.drive_path.is_empty() {
-            return Err("device has no drive to eject".to_string());
+            return Err(crate::i18n::tr(
+                "device has no drive to eject",
+                "o dispositivo não tem unidade para ejetar",
+            )
+            .to_string());
         }
-        self.call_method(&device.drive_path, IFACE_DRIVE, "Eject", &no_user_interaction())
-            .await
+        self.call_method(
+            &device.drive_path,
+            IFACE_DRIVE,
+            "Eject",
+            &no_user_interaction(),
+        )
+        .await
     }
 
     pub async fn power_off(&self, device: &Device) -> Result<(), String> {
         if device.drive_path.is_empty() {
-            return Err("device has no drive to power off".to_string());
+            return Err(crate::i18n::tr(
+                "device has no drive to power off",
+                "o dispositivo não tem unidade para desligar",
+            )
+            .to_string());
         }
-        self.call_method(&device.drive_path, IFACE_DRIVE, "PowerOff", &no_user_interaction())
-            .await
+        self.call_method(
+            &device.drive_path,
+            IFACE_DRIVE,
+            "PowerOff",
+            &no_user_interaction(),
+        )
+        .await
     }
 
     pub async fn lock(&self, device: &Device) -> Result<(), String> {
-        self.call_method(&device.object_path, IFACE_ENCRYPTED, "Lock", &empty_options())
-            .await
+        self.call_method(
+            &device.object_path,
+            IFACE_ENCRYPTED,
+            "Lock",
+            &empty_options(),
+        )
+        .await
     }
 }
 
@@ -418,7 +442,10 @@ pub fn is_relevant_signal(msg: &zbus::Message) -> bool {
     if sender != SERVICE {
         return false;
     }
-    let iface = header.interface().map(|s| s.to_string()).unwrap_or_default();
+    let iface = header
+        .interface()
+        .map(|s| s.to_string())
+        .unwrap_or_default();
     let member = header.member().map(|s| s.to_string()).unwrap_or_default();
     matches!(
         (iface.as_str(), member.as_str()),

@@ -6,8 +6,8 @@ use zbus::MessageStream;
 use futures_lite::stream::StreamExt;
 
 use crate::config::Config;
-use crate::device::{build_devices, Device};
-use crate::udisks::{is_relevant_signal, UdisksClient};
+use crate::device::{Device, build_devices};
+use crate::udisks::{UdisksClient, is_relevant_signal};
 
 const DEBOUNCE_MS: u64 = 150;
 
@@ -37,7 +37,14 @@ impl<'a> Monitor<'a> {
         F: FnMut(&[Device]),
     {
         if !self.client.connect().await {
-            return Err(format!("cannot connect to system bus: {}", self.client.last_error()));
+            return Err(format!(
+                "{}: {}",
+                crate::i18n::tr(
+                    "cannot connect to system bus",
+                    "não foi possível conectar ao barramento de sistema"
+                ),
+                self.client.last_error()
+            ));
         }
         let connection = self
             .client
@@ -45,7 +52,7 @@ impl<'a> Monitor<'a> {
             .ok_or_else(|| "system bus connection lost".to_string())?;
         let mut stream = MessageStream::from(&connection);
 
-        use tokio::signal::unix::{signal, SignalKind};
+        use tokio::signal::unix::{SignalKind, signal};
         let mut sigint = signal(SignalKind::interrupt()).map_err(|e| e.to_string())?;
         let mut sigterm = signal(SignalKind::terminate()).map_err(|e| e.to_string())?;
 

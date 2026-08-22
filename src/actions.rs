@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 
 use crate::config::Config;
-use crate::device::{build_devices, Device};
+use crate::device::{Device, build_devices};
+use crate::i18n;
 use crate::udisks::UdisksClient;
 use crate::util;
 
@@ -28,7 +29,11 @@ impl<'a> Actions<'a> {
 
     async fn mount(&self, d: &Device) -> Result<(), String> {
         if d.encrypted && d.locked {
-            return Err("device is locked; unlock it first".to_string());
+            return Err(i18n::tr(
+                "device is locked; unlock it first",
+                "o dispositivo está bloqueado; desbloqueie primeiro",
+            )
+            .to_string());
         }
         let mut client = UdisksClient::new();
         if !client.connect().await {
@@ -39,7 +44,9 @@ impl<'a> Actions<'a> {
 
     async fn unmount(&self, d: &Device) -> Result<(), String> {
         if !d.mounted {
-            return Err("device is not mounted".to_string());
+            return Err(
+                i18n::tr("device is not mounted", "o dispositivo não está montado").to_string(),
+            );
         }
         let mut client = UdisksClient::new();
         if !client.connect().await {
@@ -50,7 +57,11 @@ impl<'a> Actions<'a> {
 
     async fn eject(&self, d: &Device) -> Result<(), String> {
         if !d.ejectable {
-            return Err("device is not ejectable".to_string());
+            return Err(i18n::tr(
+                "device is not ejectable",
+                "o dispositivo não pode ser ejetado",
+            )
+            .to_string());
         }
         let mut client = UdisksClient::new();
         if !client.connect().await {
@@ -64,7 +75,11 @@ impl<'a> Actions<'a> {
 
     async fn power_off(&self, d: &Device) -> Result<(), String> {
         if !d.can_power_off {
-            return Err("device cannot be powered off".to_string());
+            return Err(i18n::tr(
+                "device cannot be powered off",
+                "o dispositivo não pode ser desligado",
+            )
+            .to_string());
         }
         let mut client = UdisksClient::new();
         if !client.connect().await {
@@ -75,7 +90,11 @@ impl<'a> Actions<'a> {
 
     async fn lock(&self, d: &Device) -> Result<(), String> {
         if !d.encrypted || d.locked {
-            return Err("device is not an unlocked encrypted volume".to_string());
+            return Err(i18n::tr(
+                "device is not an unlocked encrypted volume",
+                "o dispositivo não é um volume criptografado desbloqueado",
+            )
+            .to_string());
         }
         let mut client = UdisksClient::new();
         if !client.connect().await {
@@ -86,7 +105,11 @@ impl<'a> Actions<'a> {
 
     async fn unlock(&self, d: &Device) -> Result<(), String> {
         if !d.encrypted || !d.locked {
-            return Err("device is not a locked encrypted volume".to_string());
+            return Err(i18n::tr(
+                "device is not a locked encrypted volume",
+                "o dispositivo não é um volume criptografado bloqueado",
+            )
+            .to_string());
         }
         // The passphrase goes through an interactive terminal, then udisksctl
         // does the actual unlock.
@@ -96,7 +119,11 @@ impl<'a> Actions<'a> {
             util::shell_quote(&d.block)
         );
         if util::fork_exec(&cmd) < 0 {
-            return Err("failed to launch unlock terminal".to_string());
+            return Err(i18n::tr(
+                "failed to launch unlock terminal",
+                "falha ao abrir o terminal de desbloqueio",
+            )
+            .to_string());
         }
         Ok(())
     }
@@ -109,21 +136,37 @@ impl<'a> Actions<'a> {
             util::shell_quote(&target)
         );
         if util::fork_exec(&cmd) < 0 {
-            return Err(format!(
-                "failed to launch {}",
-                self.config.file_manager_command
-            ));
+            return Err(i18n::tr(
+                "failed to launch the file manager",
+                "falha ao abrir o gerenciador de arquivos",
+            )
+            .to_string());
         }
         Ok(())
     }
 
     async fn copy(&self, d: &Device) -> Result<(), String> {
         let target = self.resolve_mount(d).await?;
-        let mut clipboard = arboard::Clipboard::new()
-            .map_err(|e| format!("clipboard unavailable: {}", e))?;
-        clipboard
-            .set_text(target)
-            .map_err(|e| format!("failed to set clipboard: {}", e))
+        let mut clipboard = arboard::Clipboard::new().map_err(|e| {
+            format!(
+                "{}: {}",
+                i18n::tr(
+                    "clipboard unavailable",
+                    "área de transferência indisponível"
+                ),
+                e
+            )
+        })?;
+        clipboard.set_text(target).map_err(|e| {
+            format!(
+                "{}: {}",
+                i18n::tr(
+                    "failed to set clipboard",
+                    "falha ao definir a área de transferência"
+                ),
+                e
+            )
+        })
     }
 
     // Resolve the mount point, mounting first if needed.
@@ -137,7 +180,11 @@ impl<'a> Actions<'a> {
         {
             return Ok(fresh.mount_point);
         }
-        Err("device mounted but mount point could not be resolved".to_string())
+        Err(i18n::tr(
+            "device mounted but mount point could not be resolved",
+            "dispositivo montado, mas o ponto de montagem não pôde ser resolvido",
+        )
+        .to_string())
     }
 
     pub async fn perform(&self, kind: ActionKind, d: &Device) -> i32 {

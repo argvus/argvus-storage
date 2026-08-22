@@ -17,6 +17,7 @@ use gtk_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
 use crate::actions::{ActionKind, Actions};
 use crate::config::Config;
 use crate::device::Device;
+use crate::i18n;
 use crate::snapshot;
 use crate::util;
 
@@ -71,7 +72,14 @@ pub fn run(
 ) -> i32 {
     if let Err(e) = gtk::init() {
         eprintln!("argvus-storage: gtk init failed: {e}");
-        util::notify("argvus-storage", "cannot open the storage menu", true);
+        util::notify(
+            "argvus-storage",
+            i18n::tr(
+                "cannot open the storage menu",
+                "não foi possível abrir o menu de armazenamento",
+            ),
+            true,
+        );
         return 1;
     }
 
@@ -82,7 +90,7 @@ pub fn run(
     let position = popup_position(devices.len(), fixed_pos);
 
     let overlay = gtk::Window::new(gtk::WindowType::Toplevel);
-    overlay.set_title("Removable devices");
+    overlay.set_title(i18n::tr("Removable devices", "Dispositivos removíveis"));
     overlay.set_role("argvus-storage");
     overlay.set_widget_name("storage-menu-overlay");
     overlay.set_decorated(false);
@@ -231,7 +239,10 @@ fn rebuild_menu(main_menu: &gtk::Box, devices: &[Device], ctx: &MenuCtx) {
     *ctx.hovered_action_row.borrow_mut() = None;
 
     if devices.is_empty() {
-        let empty = menu_row("No removable devices", false);
+        let empty = menu_row(
+            i18n::tr("No removable devices", "Nenhum dispositivo removível"),
+            false,
+        );
         empty.set_sensitive(false);
         main_menu.pack_start(&empty, false, false, 0);
     } else {
@@ -248,11 +259,11 @@ fn rebuild_menu(main_menu: &gtk::Box, devices: &[Device], ctx: &MenuCtx) {
         2,
     );
 
-    let refresh = menu_row("Refresh", false);
+    let refresh = menu_row(i18n::tr("Refresh", "Atualizar"), false);
     connect_refresh(&refresh, ctx);
     main_menu.pack_start(&refresh, false, false, 0);
 
-    let quit = menu_row("Quit", false);
+    let quit = menu_row(i18n::tr("Quit", "Sair"), false);
     quit.connect_button_release_event(|_, _| {
         gtk::main_quit();
         glib::Propagation::Stop
@@ -465,8 +476,8 @@ fn connect_action(item: &gtk::EventBox, entry: DeviceEntry, ctx: &MenuCtx) {
 }
 
 fn popup_position(device_count: usize, fixed_pos: Option<(i32, i32)>) -> PopupPosition {
-    let (pointer_x, pointer_y) = fixed_pos
-        .unwrap_or_else(|| current_pointer_position().unwrap_or((0, 0)));
+    let (pointer_x, pointer_y) =
+        fixed_pos.unwrap_or_else(|| current_pointer_position().unwrap_or((0, 0)));
     let display = gdk::DisplayManager::get().default_display();
     let monitor = display
         .as_ref()
@@ -531,7 +542,12 @@ fn install_css(config_path: &str) {
         }
         let provider = gtk::CssProvider::new();
         if let Err(e) = provider.load_from_path(&path) {
-            eprintln!("argvus-storage: ignoring invalid theme {}: {}", path, e);
+            eprintln!(
+                "argvus-storage: {} {}: {}",
+                i18n::tr("ignoring invalid theme", "ignorando tema inválido"),
+                path,
+                e
+            );
             continue;
         }
         gtk::StyleContext::add_provider_for_screen(
@@ -598,43 +614,65 @@ fn device_entries(d: &Device) -> Vec<DeviceEntry> {
 }
 
 fn action_label(kind: ActionKind) -> &'static str {
-    match kind {
-        ActionKind::Open => "Open",
-        ActionKind::Mount => "Mount",
-        ActionKind::Unmount => "Unmount",
-        ActionKind::Eject => "Eject",
-        ActionKind::PowerOff => "Power Off",
-        ActionKind::Lock => "Lock",
-        ActionKind::Unlock => "Unlock",
-        ActionKind::Copy => "Copy path",
-    }
+    let (en, pt) = match kind {
+        ActionKind::Open => ("Open", "Abrir"),
+        ActionKind::Mount => ("Mount", "Montar"),
+        ActionKind::Unmount => ("Unmount", "Desmontar"),
+        ActionKind::Eject => ("Eject", "Ejetar"),
+        ActionKind::PowerOff => ("Power Off", "Desligar"),
+        ActionKind::Lock => ("Lock", "Bloquear"),
+        ActionKind::Unlock => ("Unlock", "Desbloquear"),
+        ActionKind::Copy => ("Copy path", "Copiar caminho"),
+    };
+    i18n::tr(en, pt)
 }
 
 fn action_tooltip(kind: ActionKind) -> &'static str {
-    match kind {
-        ActionKind::Open => "Open in the configured file manager",
-        ActionKind::Mount => "Mount this device",
-        ActionKind::Unmount => "Unmount this device",
-        ActionKind::Eject => "Unmount and eject this device",
-        ActionKind::PowerOff => "Safely power off this drive",
-        ActionKind::Lock => "Lock this encrypted volume",
-        ActionKind::Unlock => "Unlock this encrypted volume",
-        ActionKind::Copy => "Copy the mount path",
-    }
+    let (en, pt) = match kind {
+        ActionKind::Open => (
+            "Open in the configured file manager",
+            "Abrir no gerenciador de arquivos configurado",
+        ),
+        ActionKind::Mount => ("Mount this device", "Montar este dispositivo"),
+        ActionKind::Unmount => ("Unmount this device", "Desmontar este dispositivo"),
+        ActionKind::Eject => (
+            "Unmount and eject this device",
+            "Desmontar e ejetar este dispositivo",
+        ),
+        ActionKind::PowerOff => (
+            "Safely power off this drive",
+            "Desligar esta unidade com segurança",
+        ),
+        ActionKind::Lock => (
+            "Lock this encrypted volume",
+            "Bloquear este volume criptografado",
+        ),
+        ActionKind::Unlock => (
+            "Unlock this encrypted volume",
+            "Desbloquear este volume criptografado",
+        ),
+        ActionKind::Copy => ("Copy the mount path", "Copiar o ponto de montagem"),
+    };
+    i18n::tr(en, pt)
 }
 
 fn device_title(d: &Device) -> String {
-    let state = if d.encrypted && d.locked {
-        "locked"
-    } else if d.mounted {
-        "mounted"
-    } else {
-        "available"
-    };
+    let (en, pt) = state_words(d.encrypted && d.locked, d.mounted);
+    let state = i18n::tr(en, pt);
     if d.capacity > 0 {
         format!("{} · {} · {}", d.name, util::human_bytes(d.capacity), state)
     } else {
         format!("{} · {}", d.name, state)
+    }
+}
+
+fn state_words(locked: bool, mounted: bool) -> (&'static str, &'static str) {
+    if locked {
+        ("locked", "bloqueado")
+    } else if mounted {
+        ("mounted", "montado")
+    } else {
+        ("available", "disponível")
     }
 }
 
@@ -689,7 +727,8 @@ mod tests {
             capacity: 43_700_000_000,
             ..Device::default()
         };
+        let (en, _) = state_words(false, false);
 
-        assert_eq!(device_title(&device), "Ventoy · 43.7 GB · available");
+        assert_eq!(device_title(&device), format!("Ventoy · 43.7 GB · {}", en));
     }
 }

@@ -1,6 +1,7 @@
 use crate::actions::{ActionKind, Actions};
 use crate::config::Config;
 use crate::device::Device;
+use crate::i18n;
 use crate::util;
 
 pub struct MenuEntry {
@@ -27,60 +28,67 @@ impl<'a> Menu<'a> {
                 entries.push(MenuEntry {
                     kind: ActionKind::Open,
                     device_index: i,
-                    label: format!("{}Open", prefix),
+                    label: format!("{}{}", prefix, i18n::tr("Open", "Abrir")),
                 });
                 entries.push(MenuEntry {
                     kind: ActionKind::Mount,
                     device_index: i,
-                    label: format!("{}Mount", prefix),
+                    label: format!("{}{}", prefix, i18n::tr("Mount", "Montar")),
                 });
             }
             if d.mounted {
                 entries.push(MenuEntry {
                     kind: ActionKind::Unmount,
                     device_index: i,
-                    label: format!("{}Unmount", prefix),
+                    label: format!("{}{}", prefix, i18n::tr("Unmount", "Desmontar")),
                 });
             }
             if d.encrypted && d.locked {
                 entries.push(MenuEntry {
                     kind: ActionKind::Unlock,
                     device_index: i,
-                    label: format!("{}Unlock", prefix),
+                    label: format!("{}{}", prefix, i18n::tr("Unlock", "Desbloquear")),
                 });
             }
             if d.encrypted && !d.locked && d.mounted {
                 entries.push(MenuEntry {
                     kind: ActionKind::Lock,
                     device_index: i,
-                    label: format!("{}Lock", prefix),
+                    label: format!("{}{}", prefix, i18n::tr("Lock", "Bloquear")),
                 });
             }
             if d.ejectable {
                 entries.push(MenuEntry {
                     kind: ActionKind::Eject,
                     device_index: i,
-                    label: format!("{}Eject", prefix),
+                    label: format!("{}{}", prefix, i18n::tr("Eject", "Ejetar")),
                 });
             }
             if d.can_power_off {
                 entries.push(MenuEntry {
                     kind: ActionKind::PowerOff,
                     device_index: i,
-                    label: format!("{}Power Off", prefix),
+                    label: format!("{}{}", prefix, i18n::tr("Power Off", "Desligar")),
                 });
             }
             if d.mounted {
                 entries.push(MenuEntry {
                     kind: ActionKind::Copy,
                     device_index: i,
-                    label: format!("{}Copy path", prefix),
+                    label: format!("{}{}", prefix, i18n::tr("Copy path", "Copiar caminho")),
                 });
             }
         }
 
         if entries.is_empty() {
-            util::notify("argvus-storage", "No removable storage devices", false);
+            util::notify(
+                "argvus-storage",
+                i18n::tr(
+                    "No removable storage devices",
+                    "Nenhum dispositivo de armazenamento removível",
+                ),
+                false,
+            );
             return 1;
         }
 
@@ -110,7 +118,14 @@ impl<'a> Menu<'a> {
 
     pub async fn run_devices(&self, devices: &[Device]) -> i32 {
         if devices.is_empty() {
-            util::notify("argvus-storage", "No removable storage devices", false);
+            util::notify(
+                "argvus-storage",
+                i18n::tr(
+                    "No removable storage devices",
+                    "Nenhum dispositivo de armazenamento removível",
+                ),
+                false,
+            );
             return 1;
         }
 
@@ -139,13 +154,22 @@ impl<'a> Menu<'a> {
 }
 
 fn device_label(d: &Device) -> String {
-    let state = if d.encrypted && d.locked {
-        "locked"
-    } else if d.mounted {
-        "mounted"
-    } else {
-        "available"
-    };
+    let state = i18n::tr(
+        if d.encrypted && d.locked {
+            "locked"
+        } else if d.mounted {
+            "mounted"
+        } else {
+            "available"
+        },
+        if d.encrypted && d.locked {
+            "bloqueado"
+        } else if d.mounted {
+            "montado"
+        } else {
+            "disponível"
+        },
+    );
 
     let mut details: Vec<String> = Vec::new();
     if !d.filesystem.is_empty() {

@@ -104,7 +104,11 @@ pub fn statvfs_usage(mountpoint: &str) -> Option<(u64, u64, u64, bool)> {
 // Desktop notification via notify-send (best effort).
 pub fn notify(summary: &str, body: &str, critical: bool) {
     let mut cmd = String::from("notify-send --app-name=argvus-storage ");
-    cmd += if critical { "-u critical " } else { "-u normal " };
+    cmd += if critical {
+        "-u critical "
+    } else {
+        "-u normal "
+    };
     cmd += &shell_quote(summary);
     if !body.is_empty() {
         cmd.push(' ');

@@ -152,11 +152,13 @@ pub fn build_devices(
             d.name = basename(&d.block).to_string();
         }
 
-        let seq = insertion_seq.entry(d.object_path.clone()).or_insert_with(|| {
-            let n = *next_insertion;
-            *next_insertion += 1;
-            n
-        });
+        let seq = insertion_seq
+            .entry(d.object_path.clone())
+            .or_insert_with(|| {
+                let n = *next_insertion;
+                *next_insertion += 1;
+                n
+            });
         d.insertion_seq = *seq;
 
         if d.mounted {
@@ -175,29 +177,27 @@ pub fn build_devices(
     }
 
     let mode = cfg.sort.as_str();
-    out.sort_by(|a, b| {
-        match mode {
-            "name" => a.name.to_lowercase().cmp(&b.name.to_lowercase()),
-            "size" => {
-                if a.capacity != b.capacity {
-                    return b.capacity.cmp(&a.capacity);
-                }
-                a.insertion_seq.cmp(&b.insertion_seq)
+    out.sort_by(|a, b| match mode {
+        "name" => a.name.to_lowercase().cmp(&b.name.to_lowercase()),
+        "size" => {
+            if a.capacity != b.capacity {
+                return b.capacity.cmp(&a.capacity);
             }
-            "insertion" => a.insertion_seq.cmp(&b.insertion_seq),
-            _ => {
-                if a.mounted != b.mounted {
-                    return if a.mounted {
-                        Ordering::Less
-                    } else {
-                        Ordering::Greater
-                    };
-                }
-                if a.mounted && b.mounted && a.mount_time != b.mount_time {
-                    return b.mount_time.cmp(&a.mount_time);
-                }
-                a.insertion_seq.cmp(&b.insertion_seq)
+            a.insertion_seq.cmp(&b.insertion_seq)
+        }
+        "insertion" => a.insertion_seq.cmp(&b.insertion_seq),
+        _ => {
+            if a.mounted != b.mounted {
+                return if a.mounted {
+                    Ordering::Less
+                } else {
+                    Ordering::Greater
+                };
             }
+            if a.mounted && b.mounted && a.mount_time != b.mount_time {
+                return b.mount_time.cmp(&a.mount_time);
+            }
+            a.insertion_seq.cmp(&b.insertion_seq)
         }
     });
 
